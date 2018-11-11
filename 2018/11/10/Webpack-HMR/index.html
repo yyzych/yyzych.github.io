@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <script src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+  
+  
+    <meta name="keywords" content="Webpack,">
+  
+
+  
+    <meta name="description" content="Webpack HMR">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>Webpack HMR [ 一只叫科学的狗 ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/xoxo.css">
+    
+  
+</head>
+
+<body>
+  <div class="nav-container">
+    <nav class="home-menu pure-menu pure-menu-horizontal">
+  <a class="pure-menu-heading" href="/">
+    <img class="avatar" src="http://yyzych.github.io/images/logo.png">
+    <span class="title">一只叫科学的狗</span>
+  </a>
+
+  <ul class="pure-menu-list clearfix">
+      
+          
+            <li class="pure-menu-item"><a href="/" class="pure-menu-link">首页</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/archives" class="pure-menu-link">归档</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/tags" class="pure-menu-link">标签</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/works" class="pure-menu-link">作品</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/about" class="pure-menu-link">关于</a></li>
+          
+      
+  </ul>
+   
+</nav>
+  </div>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <div class="post-container">
+  <article class="post" id="post">
+    <header class="post-header text-center">
+      <h1 class="title">
+        Webpack HMR
+      </h1>
+      <span>
+        
+        <time class="time" datetime="2018-11-10T11:56:46.000Z">
+        2018-11-10
+      </time>
+        
+      </span>
+      <span class="slash">/</span>
+      <span class="post-meta">
+      <span class="post-tags">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Webpack/">Webpack</a></li></ul>
+      </span>
+    </span>
+      <span class="slash">/</span>
+      <span class="read">
+      <span id="busuanzi_value_page_pv"></span> 点击
+    </span>
+      <span class="slash">/</span>
+    </header>
+
+    <div class="post-content">
+      <p>早些项目用的是Webpack1，配合webpack-dev-server，还算简单的配置就可实现热加载。这次接手的项目用了Webpack2，以及有两点不同导致配置更加复杂</p>
+<ul>
+<li>项目有自己的Node服务所以没有通过webpack-dev-server另起静态服务器</li>
+<li>多个构建目标</li>
+</ul>
+<p>Webpack的配置实在让人头大（其实还是自己没有熟读文档），尤其是热加载这块。针对这次的项目做一个总结</p>
+<h3 id="热刷新与热加载"><a href="#热刷新与热加载" class="headerlink" title="热刷新与热加载"></a>热刷新与热加载</h3><blockquote><ul>
+<li>热刷新：文件改动后，整个页面刷新，不保留任何状态（比如输入过内容的Input表单），相当于webpack帮你摁了F5刷新</li>
+<li>热加载：文件改动后，以最小的代价改变被改变的区域。尽可能保留改动文件前的状态（对input输入内容后，修改其他标签的代码）。即HMR</li>
+</ul>
+</blockquote>
+<h3 id="编译代码的方式"><a href="#编译代码的方式" class="headerlink" title="编译代码的方式"></a>编译代码的方式</h3><p>开发时，要将原始代码编译为在浏览器中可执行的代码，最原始的，每一次改动后，人肉执行编译命令生成新文件。但是，大清都忘了多少年，这种方式效率太低了，无脑重复的事就应该交给机器去做。Webpack提供3种编译的方案选择，提高开发阶段的工作效率</p>
+<h4 id="webpack’s-Watch-Mode"><a href="#webpack’s-Watch-Mode" class="headerlink" title="webpack’s Watch Mode"></a>webpack’s Watch Mode</h4><p>观察模式。如果其中一个文件被更新，代码将被重新编译，所以你不必手动运行整个构建。但是你还是需要手动刷新浏览器<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">webpack --watch</span><br></pre></td></tr></table></figure></p>
+<h4 id="webpack-dev-server"><a href="#webpack-dev-server" class="headerlink" title="webpack-dev-server"></a>webpack-dev-server</h4><p>提供了一个简单的web服务器。文件改动后，web服务器就会自动重新加载编译后的代码，省掉了手动刷新浏览器这一步。同时支持热刷新和热加载<br>简单的使用，只需要在webpack配置文件中添加devServer一节<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">entry: &#123;</span><br><span class="line">  app: <span class="string">'./src/index.js'</span></span><br><span class="line">&#125;,</span><br><span class="line"><span class="comment">// 告诉 webpack-dev-server，在 localhost:8080 下建立服务</span></span><br><span class="line">devServer: &#123;</span><br><span class="line">  <span class="comment">// 服务的根目录在dist 目录下</span></span><br><span class="line">  contentBase: <span class="string">'./dist'</span></span><br><span class="line">&#125;,</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<h4 id="webpack-dev-middleware"><a href="#webpack-dev-middleware" class="headerlink" title="webpack-dev-middleware"></a>webpack-dev-middleware</h4><p>中间件。它可以把<strong><em>webpack处理后的文件传递给一个服务器(server)</em></strong>。 webpack-dev-server 在内部使用了它，同时，它也可以作为一个单独的包来使用，以便进行更多自定义设置来实现更多的需求。比如你有一个自己的Node服务<br>webpack.config.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">entry: &#123;</span><br><span class="line">  app: <span class="string">'./src/index.js'</span></span><br><span class="line">&#125;,</span><br><span class="line">output: &#123;</span><br><span class="line">  filename: <span class="string">'[name].bundle.js'</span>,</span><br><span class="line">  path: path.resolve(__dirname, <span class="string">'dist'</span>),</span><br><span class="line">  publicPath: <span class="string">'/'</span></span><br><span class="line">&#125;</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>server.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> express = <span class="built_in">require</span>(<span class="string">'express'</span>);</span><br><span class="line"><span class="keyword">const</span> webpack = <span class="built_in">require</span>(<span class="string">'webpack'</span>);</span><br><span class="line"><span class="keyword">const</span> webpackDevMiddleware = <span class="built_in">require</span>(<span class="string">'webpack-dev-middleware'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> app = express();</span><br><span class="line"><span class="keyword">const</span> config = <span class="built_in">require</span>(<span class="string">'./webpack.config.js'</span>);</span><br><span class="line"><span class="keyword">const</span> compiler = webpack(config);</span><br><span class="line"></span><br><span class="line">app.use(webpackDevMiddleware(compiler, &#123;</span><br><span class="line">  <span class="comment">// 如何访问编译后的静态资源</span></span><br><span class="line">  <span class="comment">// 如果配置为'/'，则表示资源在http://localhost:3000 下访问。注意，是在当前Node服务的端口之下</span></span><br><span class="line">  publicPath: config.output.publicPath</span><br><span class="line">&#125;));</span><br><span class="line"></span><br><span class="line">app.listen(<span class="number">3000</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'Example app listening on port 3000!\n'</span>);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<h3 id="启用HMR"><a href="#启用HMR" class="headerlink" title="启用HMR"></a>启用HMR</h3><p>上面的编译方式中第二，三种方式都支持热刷新和热加载。启用热加载还需要多做一些工作</p>
+<h4 id="webpack-dev-server-1"><a href="#webpack-dev-server-1" class="headerlink" title="webpack-dev-server"></a>webpack-dev-server</h4><p>修改webpack配置文件devServer一节中的配置，再配合使用webpack内置的HMR插件即可<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">entry: &#123;</span><br><span class="line">  app: <span class="string">'./src/index.js'</span></span><br><span class="line">&#125;,</span><br><span class="line"><span class="comment">// 告诉 webpack-dev-server，在 localhost:8080 下建立服务</span></span><br><span class="line">devServer: &#123;</span><br><span class="line">  <span class="comment">// 服务的根目录在dist 目录下</span></span><br><span class="line">  contentBase: <span class="string">'./dist'</span>,</span><br><span class="line">  <span class="comment">// 启用webpack的模块热替换特性</span></span><br><span class="line">  hot: <span class="literal">true</span></span><br><span class="line">&#125;,</span><br><span class="line">plugins: [</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 使用HotModuleReplacementPlugin后才能完全启用HMR</span></span><br><span class="line">  <span class="keyword">new</span> webpack.HotModuleReplacementPlugin(),</span><br><span class="line">  <span class="comment">// 可选。当接收到热更新信号时，在浏览器console控制台打印更多可读性高的模块名称等信息</span></span><br><span class="line">  <span class="keyword">new</span> webpack.NamedModulesPlugin()</span><br><span class="line">],</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<blockquote><p>注意，必须有 webpack.HotModuleReplacementPlugin 才能完全启用 HMR。如果 webpack 或 webpack-dev-server 是通过 –hot 选项启动的，那么这个插件会被自动添加，所以你可能不需要把它添加到 webpack.config.js 中。</p>
+<footer><strong>@webpack</strong><cite><a href="https://webpack.docschina.org/configuration/dev-server/#devserver-hot" target="_blank" rel="noopener">webpack.docschina.org/configuration/dev-server/#devserver-hot</a></cite></footer></blockquote>
+<p>修改入口文件<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过 HotModuleReplacementPlugin 启用了HMR后，它的接口将被暴露在 module.hot 属性下面。需要先要检查这个接口是否可访问，然后再开始使用它。</span></span><br><span class="line"><span class="keyword">if</span> (<span class="built_in">module</span>.hot) &#123;</span><br><span class="line">  <span class="comment">// 指定的依赖模块发生改变时进行更新，更新完成后触发回调</span></span><br><span class="line">  <span class="built_in">module</span>.hot.accept(<span class="string">'./print.js'</span>, <span class="function"><span class="keyword">function</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">'Accepting the updated printMe module!'</span>);</span><br><span class="line">    printMe();</span><br><span class="line">  &#125;)</span><br><span class="line">  <span class="comment">// 或者也可以</span></span><br><span class="line">  <span class="comment">// 接受自身更新。当前模块或依赖模块发生改变时进行更新</span></span><br><span class="line">  <span class="comment">// 在入口文件中添加，则意味对所有模块的修改都能监听到并进行更新</span></span><br><span class="line">  <span class="comment">// module.hot.accept(</span></span><br><span class="line">  <span class="comment">//   errorHandler // 更新异常时触发错误回调</span></span><br><span class="line">  <span class="comment">// );</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><a href="https://webpack.docschina.org/guides/hot-module-replacement#%E5%90%AF%E7%94%A8-hmr" target="_blank" rel="noopener">完整的官方示例</a></p>
+<p>上面是通过配置的方式使用webpack-dev-server，其实也可以通过webpack-dev-server提供的<a href="https://webpack.docschina.org/guides/hot-module-replacement#%E9%80%9A%E8%BF%87-node-js-api" target="_blank" rel="noopener">Node.js API</a>方式使用<br>注意，它与下面的webpack-dev-middleware不是一回事，虽然都有一个自己的Node服务，但是webpack-dev-server会另起一个静态文件服务（内部也调用了webpack-dev-middleware），而webpack-dev-middleware则以中间件的形式将处理结果通知给自己的Node服务</p>
+<h4 id="webpack-dev-middleware-1"><a href="#webpack-dev-middleware-1" class="headerlink" title="webpack-dev-middleware"></a>webpack-dev-middleware</h4><p>配合<a href="https://github.com/webpack-contrib/webpack-hot-middleware" target="_blank" rel="noopener">webpack-hot-middleware</a>才能在自己的服务下启用 HMR<br>webpack.config.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">entry: &#123;</span><br><span class="line">  app: [</span><br><span class="line">    <span class="comment">// 用于连接后台服务，接受后台服务修改编译文件后的通知</span></span><br><span class="line">    <span class="comment">// 通过查询字符串传递参数</span></span><br><span class="line">    <span class="string">'webpack-hot-middleware/client'</span>,</span><br><span class="line">    <span class="string">'./src/index.js'</span></span><br><span class="line">  ]</span><br><span class="line">&#125;,</span><br><span class="line">output: &#123;</span><br><span class="line">  filename: <span class="string">'[name].bundle.js'</span>,</span><br><span class="line">  path: path.resolve(__dirname, <span class="string">'dist'</span>),</span><br><span class="line">  publicPath: <span class="string">'/'</span></span><br><span class="line">&#125;,</span><br><span class="line"><span class="comment">// 不再需要devServer一节</span></span><br><span class="line">plugins: [</span><br><span class="line">  ...</span><br><span class="line">  <span class="comment">// 仍然需要使用HotModuleReplacementPlugin</span></span><br><span class="line">  <span class="keyword">new</span> webpack.HotModuleReplacementPlugin(),</span><br><span class="line">  <span class="keyword">new</span> webpack.NamedModulesPlugin()</span><br><span class="line">],</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>server.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> express = <span class="built_in">require</span>(<span class="string">'express'</span>);</span><br><span class="line"><span class="keyword">const</span> webpack = <span class="built_in">require</span>(<span class="string">'webpack'</span>);</span><br><span class="line"><span class="keyword">const</span> webpackDevMiddleware = <span class="built_in">require</span>(<span class="string">'webpack-dev-middleware'</span>);</span><br><span class="line"><span class="keyword">const</span> webpackHotMiddleware = <span class="built_in">require</span>(<span class="string">'webpack-hot-middleware'</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> app = express();</span><br><span class="line"><span class="keyword">const</span> config = <span class="built_in">require</span>(<span class="string">'./webpack.config.js'</span>);</span><br><span class="line"><span class="keyword">const</span> compiler = webpack(config);</span><br><span class="line"></span><br><span class="line">app.use(webpackDevMiddleware(compiler, &#123;</span><br><span class="line">  publicPath: config.output.publicPath</span><br><span class="line">&#125;));</span><br><span class="line"><span class="comment">// 加入webpack-hot-middleware中间件</span></span><br><span class="line"><span class="comment">// 可传入webpack-hot-middleware的配置项作为第二个参数</span></span><br><span class="line">app.use(webpackHotMiddleware(compiler));</span><br><span class="line"></span><br><span class="line">app.listen(<span class="number">3000</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'Example app listening on port 3000!\n'</span>);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<p>入口文件也需要调用module.hot.accept，webpack-dev-server方式一模一样。略去</p>
+<p>传给客户端的配置。可以通过查询字符串的方式传递<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">webpack-hot-middleware/client?noInfo=true&amp;path=/__webpack_hmr__</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>path - 中间件为事件流提供的路径。相当于消息是通过这个地址从后台传给客户端的</li>
+<li>name - 捆绑名称，专门用于多编译器模式。2.13.0之前不支持多编译器模式</li>
+<li>timeout - 尝试重新连接后断开连接后等待的时间</li>
+<li>reload - 设置为true在Webpack卡住时自动重新加载页面</li>
+<li>noInfo - 设置为true禁用信息（Info级别的日志？）控制台日志记录</li>
+<li>quiet - 设置为true禁用所有控制台日志记录</li>
+<li>dynamicPublicPath</li>
+<li>autoConnect</li>
+</ul>
+<p>传给中间件的配置。通过传递第二个参数传递<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">webpackHotMiddleware(compiler, &#123;</span><br><span class="line">  log: <span class="literal">false</span>,</span><br><span class="line">  path: <span class="string">"/__webpack_hmr__"</span>,</span><br><span class="line">  heartbeat: <span class="number">2000</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>log - 用于记录行的函数，传递false到禁用。默认为console.log</li>
+<li>path - 中间件服务的事件流的路径必须与客户端设置相匹配</li>
+<li>heartbeat - 多长时间将心跳更新发送到客户端以保持连接的活动。应小于客户的timeout设置 - - 通常设置为其一半值</li>
+</ul>
+<h3 id="多个构建目标"><a href="#多个构建目标" class="headerlink" title="多个构建目标"></a>多个构建目标</h3><p>除了导出一个配置对象外，webpack.config.js也支持导出<a href="https://webpack.docschina.org/configuration/configuration-types" target="_blank" rel="noopener">函数，Promise, 多个配置对象</a></p>
+<p>以我的实际情况为例，我接手的项目</p>
+<ul>
+<li>会启动一个node服务</li>
+<li>同时有移动端和桌面端的代码</li>
+<li>静态文件服务的根目录为public/，构建后输出文件都在public/之下</li>
+<li>使用webpack-dev-middle实现热加载机制</li>
+</ul>
+<p>考虑单独构建mobile, desktop<br>调用不同的webpack配置文件或一个配置文件中通过环境变量控制当前构建哪一个。麻烦的点在于不能同时构建，如果正开发着移动端，突然要切换到桌面端则需要重启。代码里少不了到处判断当前构建目标是哪个了。有没有更简单的方式？</p>
+<p>考虑使用多个entry的方式<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">entry: &#123;</span><br><span class="line">  mobile: <span class="string">'src/mobile/index.js'</span>,</span><br><span class="line">  desktop: <span class="string">'src/desktop/index.js'</span></span><br><span class="line">&#125;,</span><br><span class="line">output: &#123;</span><br><span class="line">  path: path.join(__dirname, <span class="string">'public/'</span>)</span><br><span class="line">&#125;,</span><br><span class="line">resolve: &#123;</span><br><span class="line">  alias: &#123;</span><br><span class="line">    <span class="string">'@'</span>: path.join(__dirname, <span class="string">'src'</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure></p>
+<p>但是这样会有一个问题，mobile和desktop的源文件位于不同的目录之下，假设都用@作为别名指向src/目录并不太方便，import时还必须加上<strong><em>“@/mobile”</em></strong>,<strong><em>“@/desktop”</em></strong>，变通的方式是再找一个符号区别mobile和desktop<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">entry: &#123;</span><br><span class="line">  mobile: <span class="string">'src/mobile/index.js'</span>,</span><br><span class="line">  desktop: <span class="string">'src/desktop/index.js'</span></span><br><span class="line">&#125;,</span><br><span class="line">output: &#123;</span><br><span class="line">  path: path.join(__dirname, <span class="string">'public/'</span>)</span><br><span class="line">&#125;,</span><br><span class="line">resolve: &#123;</span><br><span class="line">  alias: &#123;</span><br><span class="line">    <span class="string">'@'</span>: path.join(__dirname, <span class="string">'src/desktop'</span>),</span><br><span class="line">    <span class="string">'_'</span>: path.join(__dirname, <span class="string">'src/mobile'</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure></p>
+<p>不是不可以，只是项目已有一定规模，不希望重改。并且还有一个问题是，这种方式只能指定一个Output，mobile和desktop的输出文件都将在一个目录下。我希望的目录结构是各自资源位于各自的目录<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">public/</span><br><span class="line">  mobile/</span><br><span class="line">    bundle.js</span><br><span class="line">    css/</span><br><span class="line">    fonts/</span><br><span class="line">  desktop/</span><br><span class="line">    bundle.js</span><br><span class="line">    css/</span><br><span class="line">    fonts/</span><br></pre></td></tr></table></figure></p>
+<p>终上，保持目录和配置清晰，最后采用导出多个配置对象进行构建<br>webpack.config.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">module</span>.exports = [&#123;</span><br><span class="line">    name: <span class="string">'mobile'</span>,</span><br><span class="line">    entry: <span class="string">'src/mobile/index.js'</span>,</span><br><span class="line">    output: &#123;</span><br><span class="line">        path: path.resolve(process.cwd(), <span class="string">`./public/mobile/`</span>),</span><br><span class="line">        filename: <span class="string">'bundle.js'</span>,</span><br><span class="line">        publicPath: <span class="string">'/mobile'</span></span><br><span class="line">    &#125;,</span><br><span class="line">    resolve: &#123;</span><br><span class="line">        alias: &#123;</span><br><span class="line">            <span class="string">'@'</span>: path.join(__dirname, <span class="string">'src/mobile'</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">&#125;, &#123;</span><br><span class="line">    name: <span class="string">'desktop'</span>,</span><br><span class="line">    entry: <span class="string">'src/desktop/index.js'</span>,</span><br><span class="line">    output: &#123;</span><br><span class="line">        path: path.resolve(process.cwd(), <span class="string">`./public/desktop/`</span>),</span><br><span class="line">        filename: <span class="string">'bundle.js'</span>,</span><br><span class="line">        publicPath: <span class="string">'/desktop'</span></span><br><span class="line">    &#125;,</span><br><span class="line">    resolve: &#123;</span><br><span class="line">        alias: &#123;</span><br><span class="line">            <span class="string">'@'</span>: path.join(__dirname, <span class="string">'src/desktop'</span>)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">&#125;]</span><br></pre></td></tr></table></figure></p>
+<p>现在，还没有配置热加载的机制。与之前导出单个配置对象并没有大的区别。不同的只是各个构建目标需要指定各自的<strong><em>path</em></strong>,<strong><em>name</em></strong>选项<br>webpack.config.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">module</span>.exports = [&#123;</span><br><span class="line">	...</span><br><span class="line">    entry: [<span class="string">'webpack-hot-middleware/client?path=/__webpack_hmr_mobile&amp;timeout=20000&amp;name=mobile'</span>, <span class="string">'src/mobile/index.js'</span>],</span><br><span class="line">    plugins: [</span><br><span class="line">      <span class="keyword">new</span> webpack.HotModuleReplacementPlugin(),</span><br><span class="line">      <span class="keyword">new</span> webpack.NamedModulesPlugin()</span><br><span class="line">    ],</span><br><span class="line">    ...</span><br><span class="line">&#125;, &#123;</span><br><span class="line">    ...</span><br><span class="line">    entry: [<span class="string">'webpack-hot-middleware/client?path=/__webpack_hmr_desktop&amp;timeout=20000&amp;name=desktop'</span>, <span class="string">'src/desktop/index.js'</span>],</span><br><span class="line">    plugins: [</span><br><span class="line">      <span class="keyword">new</span> webpack.HotModuleReplacementPlugin(),</span><br><span class="line">      <span class="keyword">new</span> webpack.NamedModulesPlugin()</span><br><span class="line">    ],</span><br><span class="line">    ...</span><br><span class="line">&#125;]</span><br></pre></td></tr></table></figure></p>
+<p>然后对每一个构建目标都需要添加一层中间件进行处理<br>server.js<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line"><span class="keyword">const</span> configs = <span class="built_in">require</span>(<span class="string">'./webpack.config.js'</span>);</span><br><span class="line"><span class="keyword">const</span> mobileCompiler = webpack(config[<span class="number">0</span>]);</span><br><span class="line"><span class="keyword">const</span> desktopCompiler = webpack(config[<span class="number">1</span>]);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 处理mobile的中间件</span></span><br><span class="line">app.use(webpackDevMiddleware(mobileCompiler, &#123;</span><br><span class="line">  publicPath: config[<span class="number">0</span>].output.publicPath</span><br><span class="line">&#125;));</span><br><span class="line">app.use(webpackHotMiddleware(mobileCompiler, &#123;</span><br><span class="line">  path: <span class="string">'/__webpack_hmr_mobile'</span>,</span><br><span class="line">&#125;));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 处理desktop的中间件</span></span><br><span class="line">app.use(webpackDevMiddleware(mobileCompiler, &#123;</span><br><span class="line">  publicPath: config[<span class="number">1</span>].output.publicPath</span><br><span class="line">&#125;));</span><br><span class="line">app.use(webpackHotMiddleware(mobileCompiler, &#123;</span><br><span class="line">  path: <span class="string">'/__webpack_hmr_desktop'</span>,</span><br><span class="line">&#125;));</span><br><span class="line"></span><br><span class="line">app.listen(<span class="number">3000</span>, <span class="function"><span class="keyword">function</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">'Example app listening on port 3000!\n'</span>);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<p>现在，一切都变得索然无味！（：完成了</p>
+
+    </div>
+  </article>
+  <div class="toc-container">
+    
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#热刷新与热加载"><span class="toc-text">热刷新与热加载</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#编译代码的方式"><span class="toc-text">编译代码的方式</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#webpack’s-Watch-Mode"><span class="toc-text">webpack’s Watch Mode</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#webpack-dev-server"><span class="toc-text">webpack-dev-server</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#webpack-dev-middleware"><span class="toc-text">webpack-dev-middleware</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#启用HMR"><span class="toc-text">启用HMR</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#webpack-dev-server-1"><span class="toc-text">webpack-dev-server</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#webpack-dev-middleware-1"><span class="toc-text">webpack-dev-middleware</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#多个构建目标"><span class="toc-text">多个构建目标</span></a></li></ol>
+  </div>
+
+
+  </div>
+</div>
+<div class="copyright">
+    <span>本作品采用</span>
+    <a href="https://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>
+    <span>进行许可。 转载时请注明原文链接。</span>
+</div>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <span>〈 </span>
+          <a href="/2018/10/24/PC浏览器UserAgent总结/" rel="next" title="PC浏览器UserAgent总结">
+          PC浏览器UserAgent总结
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+          
+      </div>
+    </div>
+  
+
+  <section class="disqus-comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+  </section>
+
+  <script>
+    var disqus_shortname = 'XXX';
+    
+    var disqus_url = 'http://yyzych.github.io/2018/11/10/Webpack-HMR/';
+    
+    (function(){
+      var dsq = document.createElement('script');
+      dsq.type = 'text/javascript';
+      dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+
+  <script id="dsq-count-scr" src="//XXX.disqus.com/count.js" async></script>
+
+
+
+    </div>
+
+    
+
+  </div>
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+        <a class="bottom-item" href="https://github.com/yyzych" target="_blank">GitHub</a> |
+        <a class="bottom-item" href="https://weibo.com/u/3455768844?is_all=1" target="_blank">Weibo</a> |
+        <a class="bottom-item" href="https://hexo.io" target="_blank">Powered by hexo</a> |
+        <a class="bottom-item" href="https://github.com/KevinOfNeu/hexo-theme-xoxo" target="_blank">Theme xoxo</a>
+    </div>
+</footer>
+  
+
+<script>
+  (function(window, document, undefined) {
+
+    var timer = null;
+
+    function returnTop() {
+      cancelAnimationFrame(timer);
+      timer = requestAnimationFrame(function fn() {
+        var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+        if (oTop > 0) {
+          document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+          timer = requestAnimationFrame(fn);
+        } else {
+          cancelAnimationFrame(timer);
+        }
+      });
+    }
+
+    var hearts = [];
+    window.requestAnimationFrame = (function() {
+      return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function(callback) {
+          setTimeout(callback, 1000 / 60);
+        }
+    })();
+    init();
+
+    function init() {
+      css(".heart{z-index:9999;width: 10px;height: 10px;position: fixed;background: #f00;transform: rotate(45deg);-webkit-transform: rotate(45deg);-moz-transform: rotate(45deg);}.heart:after,.heart:before{content: '';width: inherit;height: inherit;background: inherit;border-radius: 50%;-webkit-border-radius: 50%;-moz-border-radius: 50%;position: absolute;}.heart:after{top: -5px;}.heart:before{left: -5px;}");
+      attachEvent();
+      gameloop();
+      addMenuEvent();
+    }
+
+    function gameloop() {
+      for (var i = 0; i < hearts.length; i++) {
+        if (hearts[i].alpha <= 0) {
+          document.body.removeChild(hearts[i].el);
+          hearts.splice(i, 1);
+          continue;
+        }
+        hearts[i].y--;
+        hearts[i].scale += 0.004;
+        hearts[i].alpha -= 0.013;
+        hearts[i].el.style.cssText = "left:" + hearts[i].x + "px;top:" + hearts[i].y + "px;opacity:" + hearts[i].alpha + ";transform:scale(" + hearts[i].scale + "," + hearts[i].scale + ") rotate(45deg);background:" + hearts[i].color;
+      }
+      requestAnimationFrame(gameloop);
+    }
+
+    /**
+     * 给logo设置点击事件
+     * 
+     * - 回到顶部
+     * - 出现爱心
+     */
+    function attachEvent() {
+      var old = typeof window.onclick === "function" && window.onclick;
+      var logo = document.getElementById("logo");
+      if (logo) {
+        logo.onclick = function(event) {
+          returnTop();
+          old && old();
+          createHeart(event);
+        }
+      }
+      
+    }
+
+    function createHeart(event) {
+      var d = document.createElement("div");
+      d.className = "heart";
+      hearts.push({
+        el: d,
+        x: event.clientX - 5,
+        y: event.clientY - 5,
+        scale: 1,
+        alpha: 1,
+        color: randomColor()
+      });
+      document.body.appendChild(d);
+    }
+
+    function css(css) {
+      var style = document.createElement("style");
+      style.type = "text/css";
+      try {
+        style.appendChild(document.createTextNode(css));
+      } catch (ex) {
+        style.styleSheet.cssText = css;
+      }
+      document.getElementsByTagName('head')[0].appendChild(style);
+    }
+
+    function randomColor() {
+      // return "rgb(" + (~~(Math.random() * 255)) + "," + (~~(Math.random() * 255)) + "," + (~~(Math.random() * 255)) + ")";
+      return "#F44336";
+    }
+
+    function addMenuEvent() {
+      var menu = document.getElementById('menu-main-post');
+      if (menu) {
+        var toc = document.getElementById('toc');
+        if (toc) {
+          menu.onclick = function() {
+            if (toc) {
+              if (toc.style.display == 'block') {
+                toc.style.display = 'none';
+              } else {
+                toc.style.display = 'block';
+              }
+            }
+          };
+        } else {
+          menu.style.display = 'none';
+        }
+      }
+    }
+
+  })(window, document);
+</script>
+
+  
+  <script>
+    var _hmt = _hmt || [];
+    (function () {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?FuckUBaidu";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+  <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'XXX', 'auto');
+      ga('send', 'pageview');
+  </script>
+
+
+</body>
+</html>
