@@ -1,0 +1,402 @@
+
+<!DOCTYPE html>
+<html lang="">
+
+
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#202020">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <script src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js" async></script>
+  
+  
+    <meta name="keywords" content="Vue,响应式,">
+  
+
+  
+    <meta name="description" content="认识Vue项目——响应式数据系统">
+  
+  
+  <link rel="icon" type="image/x-icon" href="/logo.png">
+  <title>认识Vue项目——响应式数据系统 [ 一只叫科学的狗 ]</title>
+  
+    <!-- stylesheets list from config.yml -->
+    
+      <link rel="stylesheet" href="//cdn.bootcss.com/pure/1.0.0/pure-min.css">
+    
+      <link rel="stylesheet" href="/css/xoxo.css">
+    
+  
+</head>
+
+<body>
+  <div class="nav-container">
+    <nav class="home-menu pure-menu pure-menu-horizontal">
+  <a class="pure-menu-heading" href="/">
+    <img class="avatar" src="http://yyzych.github.io/images/logo.png">
+    <span class="title">一只叫科学的狗</span>
+  </a>
+
+  <ul class="pure-menu-list clearfix">
+      
+          
+            <li class="pure-menu-item"><a href="/" class="pure-menu-link">首页</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/archives" class="pure-menu-link">归档</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/tags" class="pure-menu-link">标签</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/works" class="pure-menu-link">作品</a></li>
+          
+      
+          
+            <li class="pure-menu-item"><a href="/about" class="pure-menu-link">关于</a></li>
+          
+      
+  </ul>
+   
+</nav>
+  </div>
+
+  <div class="container" id="content-outer">
+    <div class="inner" id="content-inner">
+      <div class="post-container">
+  <article class="post" id="post">
+    <header class="post-header text-center">
+      <h1 class="title">
+        认识Vue项目——响应式数据系统
+      </h1>
+      <span>
+        
+        <time class="time" datetime="2018-12-21T06:10:41.000Z">
+        2018-12-21
+      </time>
+        
+      </span>
+      <span class="slash">/</span>
+      <span class="post-meta">
+      <span class="post-tags">
+        <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vue/">Vue</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/响应式/">响应式</a></li></ul>
+      </span>
+    </span>
+      <span class="slash">/</span>
+      <span class="read">
+      <span id="busuanzi_value_page_pv"></span> 点击
+    </span>
+      <span class="slash">/</span>
+    </header>
+
+    <div class="post-content">
+      <h1 id="一句话描述"><a href="#一句话描述" class="headerlink" title="一句话描述"></a>一句话描述</h1><p>首先当前需要收集的依赖（所谓依赖就是Watcher对象，有唯一ID，回调函数等）会存储在Dep.target这个唯一变量中。<br>对于对象，定义每一个属性的getter/setter，通过闭包引用一个依赖收集器（Dep对象），在getter中判断Dep.target是否不为空，是则收集依赖到收集器中，之后在setter中触发收集器中的依赖<br>对于数组，拦截变异方法以便在修改数组时触发收集器中的依赖，然后循环处理每一个元素，如果元素是对象或数组，就递归定义该元素的响应式</p>
+<h1 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h1><p>要成为响应式数据必须是对象或者数组<br>以对象为例，遍历对象的每一个属性，通过<strong>Object.definePropery</strong>定义属性的getter/setter，如果属性的值为对象/数组，则递归处理后。最终会生成一个Observer实例对象，并挂载在对象的__ob__属性中</p>
+<ul>
+<li>getter：收集依赖并返回值</li>
+<li>setter：设置值并触发依赖</li>
+</ul>
+<p>初始化后的数据结构如下</p>
+<img src="/2018/12/21/认识Vue项目——响应式数据系统/asset-2.png">
+<p>Dep2和Dep3存储的依赖相同，只是触发时机不同</p>
+<ul>
+<li>Dep2: 属性的值为对象，在对象上添加/删除($set,$del)属性时触发；属性的值为数组，在数组上添加/删除(push,pop等)元素时触发</li>
+<li>Dep3: 修改属性的值时触发其中的依赖</li>
+</ul>
+<p>这只是初始化的工作，此时并没有依赖被收集到属性的Dep实例中。真正的依赖收集需要调用$watch方法</p>
+<h1 id="收集依赖"><a href="#收集依赖" class="headerlink" title="收集依赖"></a>收集依赖</h1><p>以一个简单的例子为例，监听pro的值，一旦改变则调用callback<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> unwatchFn = vm.$watch(<span class="string">'pro'</span>, callback, options)</span><br></pre></td></tr></table></figure></p>
+<p>$watch的调用创建了Watcher对象，并返回用于取消继续监听的函数<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> watcher = <span class="keyword">new</span> Watcher(vm, <span class="string">'pro'</span>, callback, options)</span><br><span class="line">...</span><br><span class="line"><span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="title">unwatchFn</span> (<span class="params"></span>) </span>&#123;</span><br><span class="line">  watcher.teardown()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>创建Watcher对象的过程主要做了以下几件事</p>
+<ol>
+<li><p>属性赋值</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">watcher.getter：取值函数，从vm中取到pro的值（不是拦截器getter）</span><br><span class="line">watcher.cb：回调函数callback</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>将唯一变量Dep.target设置为当前创建的Watcher对象</p>
+</li>
+<li>通过该Watcher对象的取值函数访问pro的值。pro已经经过响应式系统初始化后被定义了getter拦截器，因此访问pro时被getter拦截，从而收集当前Dep.target中的依赖<img src="/2018/12/21/认识Vue项目——响应式数据系统/asset-3.png">
+对每一个属性求值意味着当前Dep.target也会被添加到每一个属性自己的Dep实例中，实现深度检测</li>
+<li>恢复Dep.target原来的值</li>
+</ol>
+<p>定义在watch选项上的监听，也是调用$watch来创建Watcher对象的</p>
+<p>这种$watch方法创建的Watcher叫做自定义观察者。除此之外还有渲染函数观察者和计算属性观察者</p>
+<h1 id="数组响应式"><a href="#数组响应式" class="headerlink" title="数组响应式"></a>数组响应式</h1><p><strong>数组的索引是非响应式的</strong>，所以不能对索引值0，1，2…等定义其getter/setter，因此也就不能通过数组索引改变元素的值而触发依赖，只能拦截变异方法</p>
+<p>变异方法指的是如push、pop、shift、unshift、splice、sort 以及 reverse 等会改变自身的值的方法。这里的改变只涉及增加元素、删除元素 以及变更元素顺序。还有替换元素，但它可以理解为删除和增加的复合操作</p>
+<p>拦截变异方法<br>覆盖<strong>数组实例</strong>的__proto__，指向一个新的对象，在该对象上定义了同名的变异方法，同时把该对象的__proto__指向Array.prototype。对于不支持__proto__的浏览器，则直接在数组实例上覆盖了变异方法</p>
+<ol>
+<li>调用原始的变异方法得到新值</li>
+<li>如果为新增操作，对新增的元素做响应式处理</li>
+<li>调用<strong>ob</strong>.dep.notify()触发依赖（也会触发重新求值该数组，重新收集依赖）</li>
+<li>返回第一步得到的新值</li>
+</ol>
+<p></p><p></p><br><img src="/2018/12/21/认识Vue项目——响应式数据系统/asset-4.png"><p></p>
+<p>由于不能给第一个元素Tom设置getter/setter，也就没有对应的Dep实例用于存储依赖，所以和上面的对象相比少了Dep1<br><code>pro[0]=&quot;Jerry&quot;</code>无法触发依赖<br><code>pro.splice(0, 1, &quot;Jerry&quot;)</code>可以触发依赖</p>
+<p><small>同样的，我们已经知道，Dep2和Dep3存储的依赖是相同的，只是触发时机不同</small></p>
+<p>一个更复杂的例子<br><img src="/2018/12/21/认识Vue项目——响应式数据系统/asset-5.png"><br>不同的地方在于数组中的元素为对象时，依赖也会被收集到元素自身的__ob__.dep(即图中的Dep2，注意Dep2的触发时机只在增加/删除属性时)中，不论options.deep是true还是false<br>在给该元素<strong>增加/删除属性</strong>时，也认为数组改变了，需要触发依赖，所以元素自身的__ob__.dep才需要收集</p>
+<p>下面代码会触发依赖调用callback<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">vm.$set(pro[<span class="number">0</span>], <span class="string">'age'</span>, <span class="number">9</span>)</span><br></pre></td></tr></table></figure></p>
+<h1 id="渲染函数观察者"><a href="#渲染函数观察者" class="headerlink" title="渲染函数观察者"></a>渲染函数观察者</h1><p>如果没有定义render选项，则template中定义的模板字符串会被编译为渲染函数，并将渲染函数赋值给 vm.$options.render 选项</p>
+<p>挂载元素时（mounted钩子之前），会创建一个Watcher对象，用于在数据改变时触发重新渲染，这个Watcher对象就叫渲染函数观察者<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Watcher(vm, updateComponent, noop, options, <span class="literal">true</span>)</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>updateComponent: 函数，调用 render 函数并返回生成的虚拟节点(vnode)，然后虚拟节点渲染成真正的 DOM。<strong>又因为渲染函数的执行会触发数据属性的 get 拦截器函数，从而将依赖(该渲染函数观察者)收集</strong></li>
+<li>noop: 空函数，值改变时触发的回调不做任何事</li>
+<li>options: 其他选项，用于触发beforeUpdate钩子</li>
+<li>true：一个Boolean，true，表明当前创建的是渲染函数观察者</li>
+</ul>
+<p><strong>Watcher构造函数的第二个参数代表的是如何从vm取值，如果是函数则在vm下执行，如果是字符串则从vm取得该属性值。并且在值发生变化时重新取值，这也是为什么创建渲染函数观察者时传入noop回调，而仍然能重新渲染，就是因为updateComponent会再次执行</strong></p>
+<p>Watcher实现了避免收集重复依赖的机制，所以重复执行updateComponent并不会导致重复收集依赖</p>
+<h1 id="计算属性观察者"><a href="#计算属性观察者" class="headerlink" title="计算属性观察者"></a>计算属性观察者</h1><p>每一个计算属性都会创建一个对应的计算属性观察者，并且在vm实例上挂载时会定义getter/setter，在getter中访问对应的计算属性观察者，通过观察者对其进行求值并收集依赖，然后返回结果</p>
+<ol>
+<li>取得计算属性的观察者</li>
+<li>判断是否需要重新求值，是则求值，不是则使用上一次求得的结果</li>
+<li>判断Dep.target是否不为空，是则收集依赖</li>
+<li>返回值</li>
+</ol>
+<p>注意，在自定义观察者创建时会触发一次求值，但是计算属性观察者是惰性求值的，只有在真正访问时计算属性时，才会致使数据属性收集计算属性观察者</p>
+<p>创建计算属性观察者<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> Watcher(vm, getter || noop, noop, computedWatcherOptions)</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>getter: 函数，用户定义的计算属性的取值函数</li>
+<li>noop: 空函数，值改变时触发的回调不做任何事</li>
+<li>computedWatcherOptions: computedWatcherOptions.lazy为true，表明当前创建的是计算属性观察者</li>
+</ul>
+<p>计算属性的getter<br><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> watcher = <span class="keyword">this</span>._computedWatchers &amp;&amp; <span class="keyword">this</span>._computedWatchers[key] <span class="comment">// _computedWatchers存储所有计算属性观察者</span></span><br><span class="line"><span class="keyword">if</span> (watcher) &#123;</span><br><span class="line">  <span class="keyword">if</span> (watcher.dirty) &#123;</span><br><span class="line">    watcher.evaluate() <span class="comment">// 该方法只有计算属性观察者会调用，使数据属性收集计算属性观察者</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (Dep.target) &#123;</span><br><span class="line">    watcher.depend() <span class="comment">// 该方法只有计算属性观察者会调用，收集渲染函数观察者到数据属性的依赖框中</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> watcher.value</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>Dep和Watcher互相引用<br><img src="/2018/12/21/认识Vue项目——响应式数据系统/asset-6.png"><br>Dep和Watcher为多对多的关系，并且互相引用，Dep的subs属性存储所有的Watcher，Watcher的deps属性存储所有的Dep</p>
+<p>实现机制<br>首先数据属性收集计算属性观察者，然后借助计算属性观察者收集渲染函数观察者到它deps中存储的所有依赖框中，也就是数据属性引用的依赖框中，因此数据属性的改变，不仅能触发计算属性观察者的更新，也能触发渲染函数观察者的更新</p>
+<h1 id="异步更新"><a href="#异步更新" class="headerlink" title="异步更新"></a>异步更新</h1><p>假如同时修改很多属性的值，每个属性值的改变都要触发重新渲染，就会导致性能问题，因此通过异步更新达到优化的目的</p>
+<p>实现机制<br>内部维护了一个唯一队列，当修改属性的值之后，将需要执行更新操作的观察者加入队列，添加时会判断队列中是否已存在当前观察者，然后通过nextTick创建一个任务，等到下一次事件循环时，一次性的执行队列中所有观察者的更新方法，并清空队列；而在执行之前，可以继续添加观察者到队列中，但此时不会再调用nextTick创建任务</p>
+<p>nextTick本身内部也维护了一个唯一队列，用于存储回调函数。创建任务时优先创建微任务，如果不支持者则降级为宏任务。关于微任务，宏任务，事件循环<a href="http://yyzych.github.io/2018/12/08/Javascript%E6%89%A7%E8%A1%8C%E4%B9%8B%E5%A4%A7%E6%8F%AD%E7%A7%98%E2%80%94%E2%80%94%E8%BF%99%E4%B8%80%E6%AC%A1%E5%81%9A%E5%88%B0%E5%BF%83%E4%B8%AD%E6%9C%89%E6%95%B0/">请看这里</a></p>
+<p>Watcher的update方法。除非指定为同步更新，否则将该观察者通过queueWatcher函数添加到队列中<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">update () &#123;</span><br><span class="line">  if (this.lazy) &#123;</span><br><span class="line">    ...</span><br><span class="line">  &#125; else if (this.sync) &#123;</span><br><span class="line">    this.run()</span><br><span class="line">  &#125; else &#123;</span><br><span class="line">    queueWatcher(this)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>queueWatcher函数。刷新队列的行为在flushSchedulerQueue函数中执行，它将传递给nextTick以在下一次事件循环中执行</p>
+<ul>
+<li>flushing: 判断是否正在执行更新操作</li>
+<li>waiting: 判断是否已创建了一次刷新队列的任务</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="function"><span class="keyword">function</span> <span class="title">queueWatcher</span> (<span class="params">watcher: Watcher</span>) </span>&#123;</span><br><span class="line">  <span class="keyword">const</span> id = watcher.id</span><br><span class="line">  <span class="keyword">if</span> (has[id] == <span class="literal">null</span>) &#123;</span><br><span class="line">    has[id] = <span class="literal">true</span></span><br><span class="line">    <span class="keyword">if</span> (!flushing) &#123;</span><br><span class="line">      queue.push(watcher)</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      ...</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (!waiting) &#123;</span><br><span class="line">      waiting = <span class="literal">true</span></span><br><span class="line">      ...</span><br><span class="line">      nextTick(flushSchedulerQueue)</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>阅读Vue源码时的注释写在<a href="https://github.com/yyzych/vue/tree/comment" target="_blank" rel="noopener">仓库</a>中，响应式的代码在<a href="https://github.com/yyzych/vue/tree/comment/src/core/observer" target="_blank" rel="noopener">observer/</a>目录<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">observer/</span><br><span class="line">    array.js        处理数组响应式的代码</span><br><span class="line">    dep.js.         存储依赖的对象。依赖为Watcher对象</span><br><span class="line">    index.js.       定义了Observer对象及defineReactive函数，defineReactive函数处理对象属性的getter,setter。入口文件</span><br><span class="line">    scheduler.js    维护了一个队列，所有变更推入队列，在一次事件循环中统一执行</span><br><span class="line">    traverse.js     递归处理响应式属性时要防止循环引用的死循环问题</span><br><span class="line">    watcher.js      定义Watcher对象。收集依赖，执行依赖</span><br></pre></td></tr></table></figure></p>
+<p>其他参考资料<br><a href="http://hcysun.me/vue-design/art/7vue-reactive.html" target="_blank" rel="noopener">揭开数据响应系统的面纱</a><br><a href="http://hcysun.me/vue-design/art/8vue-reactive-dep-watch.html" target="_blank" rel="noopener">渲染函数的观察者与进阶的数据响应系统</a></p>
+
+    </div>
+  </article>
+  <div class="toc-container">
+    
+  <div id="toc" class="toc-article">
+    <strong class="toc-title">目录</strong>
+    <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#一句话描述"><span class="toc-text">一句话描述</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#初始化"><span class="toc-text">初始化</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#收集依赖"><span class="toc-text">收集依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#数组响应式"><span class="toc-text">数组响应式</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#渲染函数观察者"><span class="toc-text">渲染函数观察者</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#计算属性观察者"><span class="toc-text">计算属性观察者</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#异步更新"><span class="toc-text">异步更新</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#其他"><span class="toc-text">其他</span></a></li></ol>
+  </div>
+
+
+  </div>
+</div>
+<div class="copyright">
+    <span>本作品采用</span>
+    <a href="https://creativecommons.org/licenses/by/4.0/">知识共享署名 4.0 国际许可协议</a>
+    <span>进行许可。 转载时请注明原文链接。</span>
+</div>
+  
+    <div class="post-nav">
+      <div class="post-nav-item post-nav-next">
+        
+          <span>〈 </span>
+          <a href="/2018/12/08/Javascript执行之大揭秘——这一次做到心中有数/" rel="next" title="Javascript执行之大揭秘——这一次做到心中有数">
+          Javascript执行之大揭秘——这一次做到心中有数
+          </a>
+        
+      </div>
+  
+      <div class="post-nav-item post-nav-prev">
+          
+      </div>
+    </div>
+  
+
+  <section class="disqus-comments">
+    <div id="disqus_thread">
+      <noscript>Please enable JavaScript to view the <a href="//disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    </div>
+  </section>
+
+  <script>
+    var disqus_shortname = 'XXX';
+    
+    var disqus_url = 'http://yyzych.github.io/2018/12/21/认识Vue项目——响应式数据系统/';
+    
+    (function(){
+      var dsq = document.createElement('script');
+      dsq.type = 'text/javascript';
+      dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+
+  <script id="dsq-count-scr" src="//XXX.disqus.com/count.js" async></script>
+
+
+
+    </div>
+
+    
+
+  </div>
+  <footer class="footer text-center">
+    <div id="bottom-inner">
+        <a class="bottom-item" href="https://github.com/yyzych" target="_blank">GitHub</a> |
+        <a class="bottom-item" href="https://weibo.com/u/3455768844?is_all=1" target="_blank">Weibo</a> |
+        <a class="bottom-item" href="https://hexo.io" target="_blank">Powered by hexo</a> |
+        <a class="bottom-item" href="https://github.com/KevinOfNeu/hexo-theme-xoxo" target="_blank">Theme xoxo</a>
+    </div>
+</footer>
+  
+
+<script>
+  (function(window, document, undefined) {
+
+    var timer = null;
+
+    function returnTop() {
+      cancelAnimationFrame(timer);
+      timer = requestAnimationFrame(function fn() {
+        var oTop = document.body.scrollTop || document.documentElement.scrollTop;
+        if (oTop > 0) {
+          document.body.scrollTop = document.documentElement.scrollTop = oTop - 50;
+          timer = requestAnimationFrame(fn);
+        } else {
+          cancelAnimationFrame(timer);
+        }
+      });
+    }
+
+    var hearts = [];
+    window.requestAnimationFrame = (function() {
+      return window.requestAnimationFrame ||
+        window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function(callback) {
+          setTimeout(callback, 1000 / 60);
+        }
+    })();
+    init();
+
+    function init() {
+      css(".heart{z-index:9999;width: 10px;height: 10px;position: fixed;background: #f00;transform: rotate(45deg);-webkit-transform: rotate(45deg);-moz-transform: rotate(45deg);}.heart:after,.heart:before{content: '';width: inherit;height: inherit;background: inherit;border-radius: 50%;-webkit-border-radius: 50%;-moz-border-radius: 50%;position: absolute;}.heart:after{top: -5px;}.heart:before{left: -5px;}");
+      attachEvent();
+      gameloop();
+      addMenuEvent();
+    }
+
+    function gameloop() {
+      for (var i = 0; i < hearts.length; i++) {
+        if (hearts[i].alpha <= 0) {
+          document.body.removeChild(hearts[i].el);
+          hearts.splice(i, 1);
+          continue;
+        }
+        hearts[i].y--;
+        hearts[i].scale += 0.004;
+        hearts[i].alpha -= 0.013;
+        hearts[i].el.style.cssText = "left:" + hearts[i].x + "px;top:" + hearts[i].y + "px;opacity:" + hearts[i].alpha + ";transform:scale(" + hearts[i].scale + "," + hearts[i].scale + ") rotate(45deg);background:" + hearts[i].color;
+      }
+      requestAnimationFrame(gameloop);
+    }
+
+    /**
+     * 给logo设置点击事件
+     * 
+     * - 回到顶部
+     * - 出现爱心
+     */
+    function attachEvent() {
+      var old = typeof window.onclick === "function" && window.onclick;
+      var logo = document.getElementById("logo");
+      if (logo) {
+        logo.onclick = function(event) {
+          returnTop();
+          old && old();
+          createHeart(event);
+        }
+      }
+      
+    }
+
+    function createHeart(event) {
+      var d = document.createElement("div");
+      d.className = "heart";
+      hearts.push({
+        el: d,
+        x: event.clientX - 5,
+        y: event.clientY - 5,
+        scale: 1,
+        alpha: 1,
+        color: randomColor()
+      });
+      document.body.appendChild(d);
+    }
+
+    function css(css) {
+      var style = document.createElement("style");
+      style.type = "text/css";
+      try {
+        style.appendChild(document.createTextNode(css));
+      } catch (ex) {
+        style.styleSheet.cssText = css;
+      }
+      document.getElementsByTagName('head')[0].appendChild(style);
+    }
+
+    function randomColor() {
+      // return "rgb(" + (~~(Math.random() * 255)) + "," + (~~(Math.random() * 255)) + "," + (~~(Math.random() * 255)) + ")";
+      return "#F44336";
+    }
+
+    function addMenuEvent() {
+      var menu = document.getElementById('menu-main-post');
+      if (menu) {
+        var toc = document.getElementById('toc');
+        if (toc) {
+          menu.onclick = function() {
+            if (toc) {
+              if (toc.style.display == 'block') {
+                toc.style.display = 'none';
+              } else {
+                toc.style.display = 'block';
+              }
+            }
+          };
+        } else {
+          menu.style.display = 'none';
+        }
+      }
+    }
+
+  })(window, document);
+</script>
+
+  
+  <script>
+    var _hmt = _hmt || [];
+    (function () {
+      var hm = document.createElement("script");
+      hm.src = "//hm.baidu.com/hm.js?FuckUBaidu";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+  <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+              m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+      ga('create', 'XXX', 'auto');
+      ga('send', 'pageview');
+  </script>
+
+
+</body>
+</html>
