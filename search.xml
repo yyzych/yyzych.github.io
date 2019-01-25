@@ -3,6 +3,17 @@
   
     
     <entry>
+      <title>接口层防护</title>
+      <link href="/2019/01/25/%E6%8E%A5%E5%8F%A3%E5%B1%82%E9%98%B2%E6%8A%A4/"/>
+      <url>/2019/01/25/%E6%8E%A5%E5%8F%A3%E5%B1%82%E9%98%B2%E6%8A%A4/</url>
+      
+        <content type="html"><![CDATA[<h4 id="当前问题"><a href="#当前问题" class="headerlink" title="当前问题"></a>当前问题</h4><ol><li>前一个请求未结束，新的请求发起了，两次请求参数一致，结果一致，第二个请求没有必要发起。例如用户短时间内连续点击按钮触发请求的情况</li><li>前一个请求未结束，新的请求发起了，两次请求参数不一致，结果不一致，应使用第二次请求的结果，但第一次请求的响应比第二次请求的响应要晚，导致呈现在页面中的是第一次的结果（<strong>这里请求的发起来自同一个地方/组件。假设页面中有A组件和B组件，它们对同一个接口发起参数不同的请求，就不需要考虑这问题</strong>）</li></ol><h4 id="如何解决"><a href="#如何解决" class="headerlink" title="如何解决"></a>如何解决</h4><p>无论是使用原生的XHR还是第三方AJAX函数，加一层自己的封装，考虑如下几种方案</p><h5 id="加延时"><a href="#加延时" class="headerlink" title="加延时"></a>加延时</h5><p>点击一次按钮后，加一个100毫秒的setTimeout延时，如果这期间内用户又点击按钮了，会clearTimeout清除掉，前一个按钮发起的请求不会真正发起。这是接口层防护，禁用按钮交互体验更好，但需要改动UI层</p><p>问题：请求来自多个组件时不能忽略任何一个请求</p><h5 id="合并请求"><a href="#合并请求" class="headerlink" title="合并请求"></a><strong>合并请求</strong></h5><p>检查URL和参数是否一致，如果一致，第二次发起的请求不会真正的发起，等待第一次请求的结果，并返回</p><h5 id="取消请求"><a href="#取消请求" class="headerlink" title="取消请求"></a>取消请求</h5><p>检查URL和参数是否一致，如果不一致，abort掉前一个请求，等待第二次请求的结果，并返回<br>问题：但是接口层无法知道请求的发起来自一个还是多个组件，多个组件不能abort，所以并不适用</p><h5 id="响应顺序保证"><a href="#响应顺序保证" class="headerlink" title="响应顺序保证"></a><strong>响应顺序保证</strong></h5><p>检查URL和参数是否一致，如果不一致，且第二次请求结果先返回，收集结果，等待第一次请求的结果也返回后，按顺序返回给上层业务</p><p>这种方式也会有小问题：可能会导致页面的呈现变慢，如A组件和B组件是隔离的，但一定要等待两个请求都返回结果后才能渲染页面</p><p>综上，在接口层可以增加<strong><em>合并请求</em></strong>和<strong><em>响应顺序保证</em></strong>两项防护</p><h4 id="具体实现"><a href="#具体实现" class="headerlink" title="具体实现"></a>具体实现</h4><p>Promise作为异步编程的一种解决方案，能很简单的实现<strong><em>合并请求</em></strong>和<strong><em>响应顺序保证</em></strong></p><ul><li><p>合并请求时，第二个请求等待并使用第一个请求的结果；</p><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> p1 = api1().then(callback1)</span><br><span class="line"><span class="keyword">let</span> p2 = p1.then(callback2)</span><br></pre></td></tr></table></figure></li><li><p>保证响应顺序时，第二个请求无论结果返回与否都需要等待第一个请求结束</p><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> p1 = api1().then(callback1)</span><br><span class="line"><span class="keyword">let</span> p2 = api2().then(<span class="function"><span class="params">_</span> =&gt;</span> <span class="built_in">Promise</span>.all([p1])).then(callback2) <span class="comment">// 等价 api2().then(_ =&gt; p1).then(callback2)</span></span><br><span class="line"><span class="keyword">let</span> p3 = api3().then(<span class="function"><span class="params">_</span> =&gt;</span> <span class="built_in">Promise</span>.all([p1, p2])).then(callback3) <span class="comment">// 等价 api3().then(_ =&gt; p2).then(callback3)</span></span><br></pre></td></tr></table></figure></li></ul><!-- [测试Demo]() -->]]></content>
+      
+      
+      
+    </entry>
+    
+    <entry>
       <title>认识Vue项目——响应式数据系统</title>
       <link href="/2018/12/21/%E8%AE%A4%E8%AF%86Vue%E9%A1%B9%E7%9B%AE%E2%80%94%E2%80%94%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E7%B3%BB%E7%BB%9F/"/>
       <url>/2018/12/21/%E8%AE%A4%E8%AF%86Vue%E9%A1%B9%E7%9B%AE%E2%80%94%E2%80%94%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E7%B3%BB%E7%BB%9F/</url>
